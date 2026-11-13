@@ -14,9 +14,6 @@
   var titleBase = document.title;
   var titleTimer = null;
 
-  $("hero-cup").innerHTML = C.stirCup();
-  if ($("closing-cup")) $("closing-cup").innerHTML = C.steamCup();
-
   // ---------- polling ----------
   function refresh() {
     var jobs = [C.api("GET", "/api/state").then(function (s) { data = s; })];
@@ -69,15 +66,18 @@
   function setStatus(open) {
     var pill = $("bar-status");
     if (open === null) {
-      pill.className = "status label closed";
+      pill.className = "status closed";
       pill.lastElementChild.textContent = "Offline";
       return;
     }
-    pill.className = "status label" + (open ? "" : " closed");
-    var waiting = data.queue.filter(function (o) { return o.status !== "ready"; }).length;
+    pill.className = "status" + (open ? "" : " closed");
     pill.lastElementChild.textContent = open ? "Open" : "Closed";
-    $("fact-menu").textContent = data.menu.filter(function (d) { return d.available; }).length + " drinks";
-    $("fact-queue").textContent = !open ? "Bar closed" : waiting === 0 ? "No wait right now" : waiting + (waiting === 1 ? " cup in line" : " cups in line");
+    var waiting = data.queue.filter(function (o) { return o.status !== "ready"; }).length;
+    var on = data.menu.filter(function (d) { return d.available; }).length;
+    $("fact-open").textContent = open ? "The line" : "Bar closed";
+    $("fact-menu").textContent = on + (on === 1 ? " drink" : " drinks");
+    $("fact-queue").textContent = waiting === 0 ? "No wait" : waiting + (waiting === 1 ? " cup ahead" : " cups ahead");
+    $("queue-side").textContent = data.queue.length ? data.queue.length + (data.queue.length === 1 ? " order" : " orders") : "Live";
   }
 
   function renderQueue() {
@@ -86,7 +86,7 @@
     if ($("queue").dataset.sig === sig) return;
     $("queue").dataset.sig = sig;
     if (!q.length) {
-      $("queue").innerHTML = '<div class="empty"><div class="cup">' + C.stirCup({ idle: true }) + "</div><p>Nobody waiting. The machine is warm.</p></div>";
+      $("queue").innerHTML = '<div class="empty"><p class="title-1">Nobody waiting.</p><p class="label mute">The machine is warm</p></div>';
       return;
     }
     var mineNums = mine.map(function (id) { return orders[id] && orders[id].number; });
@@ -95,9 +95,33 @@
       return '<li class="q' + (isMine ? " mine" : "") + '">' +
         '<span class="no">' + pad(o.number) + "</span>" +
         '<span class="who">' + C.esc(o.name) + "</span>" +
-        '<span class="what label">' + C.esc(o.drinkName) + "</span>" +
-        '<span class="st label ' + o.status + '">' + statusWord(o.status) + "</span></li>";
+        '<span class="st label ' + o.status + '">' + statusWord(o.status) + "</span>" +
+        '<span class="what label">' + C.esc(o.drinkName) + "</span></li>";
     }).join("") + "</ol>";
+  }
+
+  /* A little glass showing what the drink is made of: espresso at the bottom, then milk or water, then foam. */
+  function glassArt(name) {
+    var n = name.toLowerCase(), layers;
+    if (/espresso|ristretto|shot/.test(n)) layers = [["#3b2010", 0.5], ["#c98a4f", 0.14]];
+    else if (/americano|long black|filter|drip|black/.test(n)) layers = [["#3b2010", 0.3], ["#5d3620", 0.55]];
+    else if (/cappuccino/.test(n)) layers = [["#3b2010", 0.28], ["#c79a6c", 0.28], ["#fff5e8", 0.3]];
+    else if (/flat/.test(n)) layers = [["#3b2010", 0.34], ["#c79a6c", 0.44], ["#fff5e8", 0.08]];
+    else if (/mocha|chocolate/.test(n)) layers = [["#2a1409", 0.3], ["#7b4a2a", 0.4], ["#fff5e8", 0.16]];
+    else if (/macchiato|cortado/.test(n)) layers = [["#3b2010", 0.4], ["#c79a6c", 0.2], ["#fff5e8", 0.1]];
+    else if (/tea|chai|matcha/.test(n)) layers = [["#8a9a4a", 0.66], ["#fff5e8", 0.12]];
+    else layers = [["#3b2010", 0.2], ["#c79a6c", 0.52], ["#fff5e8", 0.14]];
+    var id = "g" + Math.random().toString(36).slice(2, 8), y = 42, out = "";
+    layers.forEach(function (l) {
+      var h = l[1] * 34;
+      y -= h;
+      out += '<rect x="10" y="' + y.toFixed(1) + '" width="28" height="' + (h + 0.5).toFixed(1) + '" fill="' + l[0] + '"/>';
+    });
+    return '<svg viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="M12 8h24l-2.5 31a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z"/></clipPath></defs>' +
+      '<path d="M12 8h24l-2.5 31a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z" fill="rgba(255,250,244,.55)"/>' +
+      '<g clip-path="url(#' + id + ')">' + out + "</g>" +
+      '<path d="M12 8h24l-2.5 31a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.5"/>' +
+      '<path d="M16 12l1.6 24" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round"/></svg>';
   }
 
   function statusWord(status) {
@@ -107,17 +131,22 @@
   function specLine(o) {
     var bits = Object.keys(o.options || {}).map(function (k) { return o.options[k]; });
     bits.push(C.SUGAR[o.sugar] || "No sugar");
-    return bits.join(" / ");
+    return bits.join(" · ");
   }
 
   function renderTickets(tickets) {
     var view = $("order-view");
-    // keep the cup animations smooth: only replace the markup when an order changed
+    // only replace the markup when an order changed, so the live figure keeps running
     var sig = "t" + JSON.stringify(tickets.map(function (o) { return [o.id, o.status, o.position]; }));
     if (view.dataset.sig === sig) return;
     view.dataset.sig = sig;
+    $("order-side").textContent = tickets.length > 1 ? tickets.length + " tickets" : "Ticket";
     view.innerHTML = tickets.map(ticketHtml).join("") +
-      '<div class="row"><button class="btn line" type="button" data-act="another">Order another <span class="arrow" aria-hidden="true">→</span></button></div>';
+      '<div class="row"><button class="btn line" type="button" data-act="another">Order another <span class="arrow" aria-hidden="true">↗</span></button></div>';
+    tickets.forEach(function (o) {
+      var canvas = document.getElementById("fig-" + o.id);
+      if (canvas) C.ascii(canvas, { speed: o.status === "making" ? 1.6 : o.status === "ready" ? 0.5 : 0.25, marker: o.status !== "collected" });
+    });
   }
 
   function ticketHtml(o) {
@@ -130,22 +159,18 @@
       collected: "Enjoy every sip.",
       cancelled: "Cancelled.",
     }[o.status];
-    var art = o.status === "collected" ? '<div style="padding:18%">' + C.steamCup() + "</div>"
-      : C.stirCup({ idle: o.status === "queued", art: o.status === "ready" });
     return '<article class="ticket' + (o.status === "ready" ? " is-ready" : "") + '">' +
-      '<div class="step-head label"><span>Ticket</span><span class="mute">' + C.esc(o.name) + "</span></div>" +
-      '<div class="ticket-main"><div class="ticket-no"><small>No.</small>' + pad(o.number) + "</div>" +
-      '<div class="ticket-art">' + art + "</div></div>" +
-      "<h3>" + C.esc(o.name) + "'s <em>" + C.esc(o.drinkName.toLowerCase()) + "</em></h3>" +
-      '<p class="spec label">' + C.esc(specLine(o)) + "</p>" +
-      (o.notes ? '<p class="spec">“' + C.esc(o.notes) + "”</p>" : "") +
+      '<div class="ticket-top"><div class="ticket-no" aria-label="Order number ' + o.number + '">' + pad(o.number) + "</div>" +
+      '<div class="ticket-who"><b>' + C.esc(o.name) + "'s " + C.esc(o.drinkName.toLowerCase()) + "</b>" +
+      "<span>" + C.esc(specLine(o)) + "</span>" + (o.notes ? "<span>“" + C.esc(o.notes) + "”</span>" : "") + "</div></div>" +
+      '<figure class="stage"><canvas id="fig-' + o.id + '" aria-hidden="true"></canvas></figure>' +
       '<ol class="track label" aria-label="Order progress">' +
       ["In line", "Brewing", "Ready"].map(function (label, i) {
         var cls = i < at || (i === at && o.status === "ready") || at === 3 ? "done" : i === at ? "now" : "";
         return '<li class="' + cls + '">' + label + "</li>";
       }).join("") + "</ol>" +
       '<p class="say" aria-live="polite">' + line + "</p>" +
-      (o.status === "queued" ? '<div class="row"><button class="text-btn" type="button" data-act="cancel" data-id="' + o.id + '">Cancel this order</button></div>' : "") +
+      (o.status === "queued" ? '<div class="row"><button class="text-btn" type="button" data-act="cancel" data-id="' + o.id + '">Cancel this order ×</button></div>' : "") +
       "</article>";
   }
 
@@ -158,54 +183,55 @@
     menuSig = sig;
     formBuilt = true;
     view.dataset.sig = "";
+    $("order-side").textContent = "5 steps";
 
     var available = data.menu.filter(function (d) { return d.available; });
     var hasTickets = mine.some(function (id) { return orders[id]; });
-    var back = hasTickets ? '<div class="row" style="margin-bottom:16px"><button class="text-btn" type="button" data-act="tickets">← Back to my ticket</button></div>' : "";
+    var back = hasTickets ? '<div class="row"><button class="text-btn" type="button" data-act="tickets">← Back to my ticket</button></div>' : "";
 
     if (!data.settings.open) {
-      view.innerHTML = back + '<div class="empty"><div class="cup">' + C.stirCup({ idle: true }) + "</div><p>The bar is closed for now. Check back in a bit.</p></div>";
+      view.innerHTML = back + '<div class="empty"><p class="title-1">The bar is closed for now.</p><p class="label mute">Check back in a bit</p></div>';
       return;
     }
     if (!available.length) {
-      view.innerHTML = back + '<div class="empty"><div class="cup">' + C.stirCup({ idle: true }) + "</div><p>Nothing on the menu yet. The barista is setting up.</p></div>";
+      view.innerHTML = back + '<div class="empty"><p class="title-1">Nothing on the menu yet.</p><p class="label mute">The barista is setting up</p></div>';
       return;
     }
 
     view.innerHTML = back + '<form id="order-form" novalidate>' +
-      '<div class="step"><div class="step-head label"><label for="f-name">01 Name</label><span class="mute">Required</span></div>' +
+      '<div class="step"><div class="step-head label"><label for="f-name">01 Name</label><span>Required</span></div>' +
       '<input class="input" id="f-name" name="name" autocomplete="given-name" maxlength="30" placeholder="Your name">' +
       '<p class="error" id="e-name"></p></div>' +
 
       '<fieldset class="step"><legend class="sr-only">Pick a drink</legend>' +
-      '<div class="step-head label" aria-hidden="true"><span>02 Drink</span><span class="mute">' + available.length + " on</span></div>" +
+      '<div class="step-head label" aria-hidden="true"><span>02 Drink</span><span>' + available.length + " on tonight</span></div>" +
       '<div class="menu">' + available.map(function (d, i) {
         return '<label class="drink"><input type="radio" name="drink" value="' + C.esc(d.id) + '"' + (i === 0 ? " checked" : "") + ">" +
-          '<span class="drink-row"><span class="n">' + pad(i + 1) + '</span><span class="name">' + C.esc(d.name) + "</span>" +
+          '<span class="drink-row"><span class="glass-art">' + glassArt(d.name) + '</span><span class="name">' + C.esc(d.name) + "</span>" +
+          '<span class="pick" aria-hidden="true"></span>' +
           '<span class="desc">' + C.esc(d.description || "") + "</span></span></label>";
       }).join("") + "</div></fieldset>" +
 
-      '<div class="step" id="opt-step"><div class="step-head label"><span>03 Options</span><span class="mute">Your call</span></div>' +
+      '<div class="step" id="opt-step"><div class="step-head label"><span>03 Options</span><span>Your call</span></div>' +
       '<div class="opt-groups">' + data.optionGroups.map(function (g) {
-        return '<fieldset class="opt-group" data-group="' + C.esc(g.id) + '"><legend class="label mute" style="margin-bottom:10px">' + C.esc(g.name) + "</legend>" +
+        return '<fieldset class="opt-group" data-group="' + C.esc(g.id) + '"><legend class="label">' + C.esc(g.name) + "</legend>" +
           '<div class="toggles">' + g.choices.map(function (c, i) {
             return '<label class="toggle"><input type="radio" name="opt-' + C.esc(g.id) + '" value="' + C.esc(c) + '"' + (i === 0 ? " checked" : "") + "><span>" + C.esc(c) + "</span></label>";
           }).join("") + "</div></fieldset>";
       }).join("") + "</div></div>" +
 
       '<fieldset class="step"><legend class="sr-only">Sugar</legend>' +
-      '<div class="step-head label" aria-hidden="true"><span>04 Sugar</span><span class="mute">Spoons</span></div>' +
-      '<div class="sugar"><div class="sugar-cup" id="sugar-cup">' + sugarCupSvg() + "</div><div>" +
-      '<div class="sugar-now" id="sugar-now">No sugar</div>' +
+      '<div class="step-head label" aria-hidden="true"><span>04 Sugar</span><span>Spoons</span></div>' +
+      '<div class="sugar-top"><div class="sugar-now" id="sugar-now">No sugar</div><div class="cubes" id="cubes" aria-hidden="true"><i></i><i></i><i></i><i></i></div></div>' +
       '<div class="levels">' + C.SUGAR.map(function (label, i) {
         return '<label class="level" title="' + label + '"><input type="radio" name="sugar" value="' + i + '"' + (i === 0 ? " checked" : "") + ' aria-label="' + label + '"><span>' + i + "</span></label>";
-      }).join("") + "</div></div></div></fieldset>" +
+      }).join("") + "</div></fieldset>" +
 
-      '<div class="step"><div class="step-head label"><label for="f-notes">05 Notes</label><span class="mute">Optional</span></div>' +
+      '<div class="step"><div class="step-head label"><label for="f-notes">05 Notes</label><span>Optional</span></div>' +
       '<textarea class="textarea" id="f-notes" name="notes" maxlength="140" placeholder="Extra hot, half caf, a little cinnamon"></textarea></div>' +
 
       '<p class="error" id="e-form" role="alert"></p>' +
-      '<div class="submit"><button class="btn" type="submit" id="f-submit"><span>Send my order</span><span class="arrow" aria-hidden="true">→</span></button></div>' +
+      '<div class="submit"><button class="btn accent" type="submit" id="f-submit"><span>Send my order</span><span class="arrow" aria-hidden="true">↗</span></button></div>' +
       "</form>";
 
     var form = $("order-form");
@@ -215,19 +241,6 @@
     form.addEventListener("input", syncForm);
     form.addEventListener("submit", submit);
     syncForm();
-  }
-
-  function sugarCupSvg() {
-    var cubes = "";
-    [[30, 40], [44, 36], [58, 40], [44, 26]].forEach(function (p, i) {
-      cubes += '<g class="cube off" data-cube="' + i + '"><rect x="' + (p[0] - 6) + '" y="' + (p[1] - 6) + '" width="12" height="12" fill="#f6ecdf" stroke="#3a2418" stroke-width="1.2" transform="rotate(' + (i * 11 - 12) + " " + p[0] + " " + p[1] + ')"/></g>';
-    });
-    return '<svg viewBox="0 0 96 96" aria-hidden="true" style="overflow:visible;width:100%;height:100%">' +
-      '<g fill="none" stroke="currentColor" stroke-width="1.4">' +
-      '<path d="M12 46h64v12a26 26 0 0 1-26 26h-12A26 26 0 0 1 12 58z"/>' +
-      '<path d="M76 52h5a9 9 0 0 1 0 18h-6"/><path d="M4 90h80"/></g>' +
-      '<ellipse cx="44" cy="47" rx="31" ry="4.5" fill="currentColor" opacity=".9"/>' +
-      cubes + "</svg>";
   }
 
   function readForm() {
@@ -271,9 +284,7 @@
     $("opt-step").hidden = !groups.length;
     $("sugar-now").textContent = C.SUGAR[v.sugar];
     document.querySelectorAll(".level").forEach(function (el, i) { el.classList.toggle("fill", i > 0 && i < v.sugar); });
-    document.querySelectorAll("#sugar-cup .cube").forEach(function (cube) {
-      cube.classList.toggle("off", Number(cube.dataset.cube) >= v.sugar);
-    });
+    document.querySelectorAll("#cubes i").forEach(function (el, i) { el.classList.toggle("on", i < v.sugar); });
     if (v.name) $("e-name").textContent = "";
   }
 
@@ -291,7 +302,7 @@
     ((drink && drink.options) || []).forEach(function (gid) { if (v.options[gid]) opts[gid] = v.options[gid]; });
     var btn = $("f-submit");
     btn.disabled = true;
-    btn.firstChild.textContent = "Sending…";
+    btn.firstChild.textContent = "Sending";
     $("e-form").textContent = "";
     C.api("POST", "/api/orders", { name: v.name, drinkId: v.drinkId, options: opts, sugar: v.sugar, notes: v.notes })
       .then(function (order) {
@@ -302,7 +313,7 @@
         wantsForm = false;
         formBuilt = false;
         askNotify();
-        C.toast("Order No. " + pad(order.number) + " is in. We'll call you.");
+        C.toast("Order " + pad(order.number) + " is in. We will call you.");
         return refresh();
       })
       .then(function () { $("order").scrollIntoView({ behavior: "smooth", block: "start" }); })
@@ -321,22 +332,22 @@
     }
   }
 
-  var showing = null;
+  var showing = null, readyFig = null;
   function checkReady(tickets) {
     if (showing) return;
     var due = tickets.filter(function (o) { return o.status === "ready" && (o.pings || 0) > (seenPings[o.id] || 0); })[0];
     if (!due) return;
     showing = due;
-    $("ready-art").innerHTML = C.stirCup({ art: true, swirl: "#f6ecdf" });
-    $("ready-no").textContent = "No. " + pad(due.number);
-    $("ready-title").innerHTML = C.esc(due.name) + ", your <em>" + C.esc(due.drinkName.toLowerCase()) + "</em> is ready.";
+    $("ready-no").textContent = pad(due.number);
+    $("ready-title").textContent = due.name + ", your " + due.drinkName.toLowerCase() + " is ready.";
     $("ready").hidden = false;
+    if (!readyFig) readyFig = C.ascii($("fig-ready"), { speed: 1.2, marker: false });
     $("ready-ok").focus();
     C.chime("ready");
     if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-    flashTitle("☕ Ready! No. " + pad(due.number));
+    flashTitle("☕ Ready: order " + pad(due.number));
     if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-      try { new Notification("Your coffee is ready", { body: due.drinkName + " for " + due.name + ", order No. " + due.number }); } catch (e) { /* ignore */ }
+      try { new Notification("Your coffee is ready", { body: due.drinkName + " for " + due.name + ", order " + due.number }); } catch (e) { /* ignore */ }
     }
   }
 

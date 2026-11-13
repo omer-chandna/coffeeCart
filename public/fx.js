@@ -1,113 +1,99 @@
-/* Page effects: the dot matrix background, scroll reveals, and the word by word tagline.
-
-   The dot matrix fragment shader is adapted from the "Dot Matrix Background" component in
-   ThreeUI Community by Meng To (https://github.com/MengTo/threeui), MIT License,
-   Copyright (c) 2026 Meng To. Ported from React + three.js to plain WebGL and recoloured. */
+/* Page effects: the live ASCII cup figure, scroll reveals, and the word by word tagline. */
 (function () {
   "use strict";
   var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var RAMP = " ..::-=+*#%";
 
-  // ---------- dot matrix ----------
-  function dotMatrix(canvas) {
-    var gl = canvas.getContext("webgl", { alpha: true, antialias: false, powerPreference: "low-power" });
-    if (!gl) return;
-    var vert = "attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }";
-    var frag = [
-      "precision mediump float;",
-      "uniform float uTime; uniform vec2 uResolution; uniform vec2 uMouse;",
-      "uniform float uGridScale; uniform float uPulseSpeed; uniform float uRadius; uniform float uOpacity; uniform vec3 uColor;",
-      "void main() {",
-      "  vec2 uv = gl_FragCoord.xy / uResolution.xy;",
-      "  float aspect = uResolution.x / uResolution.y;",
-      "  uv.x *= aspect;",
-      "  uv += uMouse * 0.04;",
-      "  vec2 grid = fract(uv * uGridScale);",
-      "  vec2 id = floor(uv * uGridScale);",
-      "  float dist = length(grid - vec2(0.5));",
-      "  float pulse = sin(uTime * uPulseSpeed + id.x * 0.22 + id.y * 0.22) * 0.5 + 0.5;",
-      "  float radius = 0.06 + pulse * uRadius;",
-      "  float alpha = smoothstep(radius, radius - 0.05, dist);",
-      "  vec2 center = vec2(0.5 * aspect, 0.62);",
-      "  float depthFade = smoothstep(0.75, 0.05, length(uv - center));",
-      "  gl_FragColor = vec4(uColor, 1.0) * (alpha * depthFade * uOpacity * (0.35 + 0.65 * pulse));",
-      "}",
-    ].join("\n");
-
-    function shader(type, src) {
-      var s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
-    }
-    var vs = shader(gl.VERTEX_SHADER, vert), fs = shader(gl.FRAGMENT_SHADER, frag);
-    if (!vs || !fs) return;
-    var prog = gl.createProgram();
-    gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-    gl.useProgram(prog);
-
-    var buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    var loc = gl.getAttribLocation(prog, "p");
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
-    var u = {};
-    ["uTime", "uResolution", "uMouse", "uGridScale", "uPulseSpeed", "uRadius", "uOpacity", "uColor"].forEach(function (n) {
-      u[n] = gl.getUniformLocation(prog, n);
-    });
-    gl.uniform3f(u.uColor, 0.89, 0.71, 0.53); // crema
-    gl.uniform1f(u.uPulseSpeed, 0.7);
-    gl.uniform1f(u.uRadius, 0.14);
-    gl.uniform1f(u.uOpacity, 0.38);
-
-    var mouse = [0, 0], target = [0, 0], frame = 0, visible = true, started = performance.now();
+  /* A cup seen from above, drawn in characters: a swirl turning inside the rim, a saucer ring,
+     a slow field around it, and one orange square where the spoon is. */
+  function ascii(canvas, opts) {
+    opts = opts || {};
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return { set: function () {} };
+    var state = { speed: opts.speed == null ? 1 : opts.speed, marker: opts.marker !== false };
+    var ink = opts.ink || "#f3cfa6", accent = opts.accent || "#f08a45";
+    var cw = 11, ch = 15, w = 0, h = 0, dpr = 1, cols = 0, rows = 0;
+    var t = 0, last = 0, frame = 0, visible = true;
 
     function resize() {
       var r = canvas.getBoundingClientRect();
-      var dpr = Math.min(window.devicePixelRatio || 1, 1.5); // keep phones cool
-      canvas.width = Math.max(1, Math.round(r.width * dpr));
-      canvas.height = Math.max(1, Math.round(r.height * dpr));
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.uniform2f(u.uResolution, canvas.width, canvas.height);
-      gl.uniform1f(u.uGridScale, r.width < 600 ? 26 : 44);
-      if (!frame) draw(performance.now(), true);
+      if (!r.width || !r.height) return;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = r.width; h = r.height;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      cols = Math.ceil(w / cw); rows = Math.ceil(h / ch);
+      draw();
     }
 
-    function draw(now, once) {
-      mouse[0] += (target[0] - mouse[0]) * 0.05;
-      mouse[1] += (target[1] - mouse[1]) * 0.05;
-      gl.uniform1f(u.uTime, (now - started) * 0.001);
-      gl.uniform2f(u.uMouse, mouse[0], mouse[1]);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      frame = !once && !reduced && visible && !document.hidden ? requestAnimationFrame(draw) : 0;
+    function draw() {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = '500 11px "Geist Mono", ui-monospace, Menlo, monospace';
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      ctx.fillStyle = ink;
+      var cx = w / 2, cy = h / 2, S = Math.min(w, h) * 0.5, R = 0.66;
+      var ma = -t * 0.7, mx = cx + Math.cos(ma) * R * 0.55 * S, my = cy + Math.sin(ma) * R * 0.55 * S;
+      var mcol = Math.round((mx - cw / 2) / cw), mrow = Math.round((my - ch / 2) / ch);
+      for (var j = 0; j < rows; j++) {
+        for (var i = 0; i < cols; i++) {
+          var px = i * cw + cw / 2, py = j * ch + ch / 2;
+          var nx = (px - cx) / S, ny = (py - cy) / S;
+          var r = Math.sqrt(nx * nx + ny * ny), v;
+          if (r < R) {
+            var a = Math.atan2(ny, nx);
+            var swirl = Math.sin(a * 2 - r * 10 + t * 1.4) * 0.5 + 0.5;
+            v = 0.3 + 0.7 * swirl * (0.45 + 0.55 * (r / R));
+          } else if (r < R + 0.09) {
+            v = 1;
+          } else if (r > R + 0.3 && r < R + 0.36) {
+            v = 0.34;
+          } else {
+            v = 0.12 + 0.16 * (Math.sin(nx * 2.4 + t * 0.5) + Math.sin(ny * 3.1 - t * 0.35)) * 0.5 + 0.08;
+            v *= Math.max(0, 1.5 - r * 0.5);
+          }
+          if (state.marker && i === mcol && j === mrow) {
+            ctx.fillStyle = accent;
+            ctx.fillRect(px - 4.5, py - 4.5, 9, 9);
+            ctx.fillStyle = ink;
+            continue;
+          }
+          var c = RAMP[Math.max(0, Math.min(RAMP.length - 1, Math.round(v * (RAMP.length - 1))))];
+          if (c !== " ") ctx.fillText(c, px, py);
+        }
+      }
     }
 
-    function wake() { if (!frame && visible && !document.hidden && !reduced) frame = requestAnimationFrame(draw); }
+    function tick(now) {
+      frame = 0;
+      if (now - last > 80) { // about 12 frames a second is plenty for characters
+        t += Math.min(0.2, (now - last) / 1000) * state.speed;
+        last = now;
+        draw();
+      }
+      wake();
+    }
+    function wake() {
+      if (!frame && visible && !document.hidden && !reduced && state.speed > 0) frame = requestAnimationFrame(tick);
+    }
 
-    window.addEventListener("pointermove", function (e) {
-      target[0] = (e.clientX / window.innerWidth) * 2 - 1;
-      target[1] = -((e.clientY / window.innerHeight) * 2 - 1);
-    }, { passive: true });
     if ("ResizeObserver" in window) new ResizeObserver(resize).observe(canvas);
     if ("IntersectionObserver" in window) {
-      new IntersectionObserver(function (entries) {
-        visible = entries[0].isIntersecting;
-        if (visible) wake(); else if (frame) { cancelAnimationFrame(frame); frame = 0; }
-      }).observe(canvas);
+      new IntersectionObserver(function (e) { visible = e[0].isIntersecting; wake(); }).observe(canvas);
     }
     document.addEventListener("visibilitychange", wake);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+    last = performance.now();
     resize();
     wake();
+    return { set: function (k, v) { state[k] = v; wake(); draw(); } };
   }
 
-  var canvas = document.getElementById("dots");
-  if (canvas) { try { dotMatrix(canvas); } catch (e) { /* no WebGL: the flat brown ground stays */ } }
+  window.Cafe = window.Cafe || {};
+  window.Cafe.ascii = ascii;
+
+  var hero = document.getElementById("fig-hero");
+  if (hero) ascii(hero);
 
   // ---------- scroll reveals (once each) ----------
   var reveals = document.querySelectorAll(".reveal");
@@ -118,7 +104,7 @@
       entries.forEach(function (en) {
         if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
       });
-    }, { rootMargin: "0px 0px -10% 0px" });
+    }, { rootMargin: "0px 0px -8% 0px" });
     reveals.forEach(function (el) { io.observe(el); });
   }
 
@@ -135,18 +121,28 @@
       var ticking = false, near = false;
       var update = function () {
         ticking = false;
-        var r = tag.getBoundingClientRect();
-        var vh = window.innerHeight;
-        // progress runs 0 → 1 while the block travels from 85% to 35% of the screen
+        var r = tag.getBoundingClientRect(), vh = window.innerHeight;
         var prog = (vh * 0.85 - r.top) / (vh * 0.5 + r.height * 0.5);
         var lit = Math.round(Math.max(0, Math.min(1, prog)) * spans.length);
         spans.forEach(function (s, i) { s.classList.toggle("on", i < lit); });
       };
-      new IntersectionObserver(function (entries) { near = entries[0].isIntersecting; if (near) update(); }, { rootMargin: "20% 0px" }).observe(tag);
+      new IntersectionObserver(function (e) { near = e[0].isIntersecting; if (near) update(); }, { rootMargin: "20% 0px" }).observe(tag);
       window.addEventListener("scroll", function () {
         if (near && !ticking) { ticking = true; requestAnimationFrame(update); }
       }, { passive: true });
       update();
     }
+  }
+
+  // ---------- footer clock ----------
+  var clock = document.getElementById("clock");
+  if (clock) {
+    var showTime = function () {
+      var d = new Date();
+      var p = function (n) { return n < 10 ? "0" + n : n; };
+      clock.textContent = p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+    };
+    showTime();
+    setInterval(showTime, 1000);
   }
 })();

@@ -7,7 +7,7 @@ It's built to run on a Raspberry Pi 2: one Python file using only the standard l
 ## What's in it
 
 **Guests** (`http://<pi>:8080/`)
-- Name, drink, options (milk, temperature, shots…), a sugar slider (sugar cubes drop into the cup as you slide), and notes
+- Name, drink, options (milk, temperature, shots…), a sugar level from 0 to 4, and notes
 - A live ticket with their order number, place in line, and progress (In line → Brewing → Ready)
 - The whole queue, with their own order highlighted
 - A full-screen "your coffee is ready" alert with a chime, vibration and a flashing tab title
@@ -76,7 +76,7 @@ A fixed address makes the link easier to share. Reserve the Pi's IP in your rout
 - **Notifications only fire while the page is open.** Browsers block real push notifications on a plain `http://` home network, so the ready call shows up when the guest's page is open or comes back to the foreground. It also checks again the moment they return to the tab. Tell people to keep the tab open.
 - **Sound needs one tap first.** Phones only play the chime after the user taps something on the page. Sending the order counts as that tap. On the admin side, tap anything once, or use Settings → Play the chime.
 - **Fonts** (Geist and Geist Mono) load from Google Fonts on each guest's phone. With no internet, the pages fall back to the system fonts and still work.
-- **The dot background** on the guest page is adapted from the Dot Matrix Background in [ThreeUI Community](https://github.com/MengTo/threeui) by Meng To (MIT), ported to plain WebGL in `public/fx.js`. Phones without WebGL just see the flat brown.
+- **The live figure** on the guest page is a cup drawn in text characters on a canvas (`public/fx.js`). No libraries.
 
 ## Files
 
@@ -86,5 +86,5 @@ public/index.html  guest page          public/guest.js   its logic
 public/admin.html  barista page        public/admin.js   its logic
 public/app.css     shared design       public/admin.css  admin extras
 public/common.js   API helper, line-drawn stirring-cup SVGs, chimes
-public/fx.js       dot matrix background, scroll reveals, tagline
+public/fx.js       live ASCII cup figure, scroll reveals, tagline
 ```
