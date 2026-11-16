@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "coffee-cart", "runtimeExecutable": "python3", "runtimeArgs": ["server.py"], "port": 8080, "env": { "COFFEE_PIN": "2468" } }
+  ]
+}

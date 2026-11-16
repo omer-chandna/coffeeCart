@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>House Coffee Bar: coffee made to order</title>
+<meta name="description" content="Order a coffee from the house bar. Pick a drink, set your sugar, and get called when it is ready.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#b58459">
+<meta property="og:type" content="website">
+<meta property="og:title" content="House Coffee Bar: coffee made to order">
+<meta property="og:description" content="Pick a drink, set your sugar, and get called when it is ready.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23b58459'/%3E%3Ccircle cx='32' cy='32' r='18' fill='%231c0f08'/%3E%3Ccircle cx='38' cy='26' r='5' fill='%23f08a45'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="glow a" aria-hidden="true"></div>
+<div class="glow b" aria-hidden="true"></div>
+<div class="glow c" aria-hidden="true"></div>
+<a class="skip" href="#order">Skip to the order form</a>
+
+<nav class="bar" aria-label="Bar">
+  <a class="mark" href="#top" aria-current="page"><i aria-hidden="true"></i><span data-house>House Coffee Bar</span></a>
+  <span class="status" id="bar-status"><span>Open</span></span>
+</nav>
+
+<main id="top">
+  <section class="hero" data-enter aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 class="heading-1" id="hero-title">Coffee,<br>made to order</h1>
+      <p>Pick a drink, set the sugar, and we call you on this screen the moment it is poured.</p>
+      <a class="btn" href="#order">Order a coffee <span class="arrow" aria-hidden="true">↗</span></a>
+    </div>
+    <figure class="stage">
+      <canvas id="fig-hero" aria-hidden="true"></canvas>
+      <div class="chip tl"><span class="label">On tonight</span><b id="fact-menu">–</b></div>
+      <div class="chip br"><span class="label" id="fact-open">The line</span><b id="fact-queue">–</b></div>
+    </figure>
+  </section>
+
+  <section class="sect reveal" id="order" aria-labelledby="order-title">
+    <div class="sect-head"><h2 class="heading-2" id="order-title">Your order</h2><span class="label" id="order-side">5 steps</span></div>
+    <div id="order-view"></div>
+  </section>
+
+  <section class="sect reveal" id="line" aria-labelledby="queue-title">
+    <div class="sect-head"><h2 class="heading-2" id="queue-title">The line</h2><span class="label" id="queue-side">Live</span></div>
+    <div id="queue"></div>
+  </section>
+
+  <section class="tagline" aria-label="How the bar works">
+    <p class="heading-4" id="tagline">Put your name down. Pick your drink. We call you on this screen the moment it is poured.</p>
+  </section>
+
+  <section class="closing reveal" aria-label="Order">
+    <a class="btn" href="#order">Order a coffee <span class="arrow" aria-hidden="true">↗</span></a>
+  </section>
+</main>
+
+<footer class="foot label">
+  <span data-house>House Coffee Bar</span>
+  <span id="clock">Made at home</span>
+</footer>
+
+<div class="call" id="ready" role="alertdialog" aria-modal="true" aria-labelledby="ready-title" hidden>
+  <canvas id="fig-ready" aria-hidden="true"></canvas>
+  <div class="ready-top label"><span>Order <span id="ready-no"></span></span><span class="pill">Ready</span></div>
+  <div class="ready-mid"><h2 id="ready-title">Your coffee is ready.</h2></div>
+  <div class="ready-foot"><button class="btn" id="ready-ok" type="button">On my way <span class="arrow" aria-hidden="true">↗</span></button></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="common.js"></script>
+<script src="fx.js"></script>
+<script src="guest.js"></script>
+</body>
+</html>

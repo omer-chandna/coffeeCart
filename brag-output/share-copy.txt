@@ -1,0 +1,1 @@
+Built a coffee bar for my living room. Guests order from their phone, I run the queue from /admin, and their phone chimes the second the flat white is poured.

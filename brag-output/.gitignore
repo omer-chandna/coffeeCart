@@ -1,0 +1,8 @@
+# Generated while rendering; rebuild with work/render.mjs and work/music.py
+work/frames/
+work/stills/
+work/chrome-profile/
+work/music.wav
+work/poster.png
+work/sheet.png
+work/render.log

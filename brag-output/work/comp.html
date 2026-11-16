@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>coffeeCart brag</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="admin.css">
+<style>
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; margin: 0; }
+  body { background: var(--bg); }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  .sglow { position: absolute; border-radius: 50%; filter: blur(160px); pointer-events: none; }
+  .sglow.a { width: 900px; height: 900px; left: -300px; top: -360px; background: #e6bd92; opacity: .9; }
+  .sglow.b { width: 1000px; height: 1000px; right: -380px; top: 380px; background: #7d5131; opacity: .7; }
+  .sglow.c { width: 700px; height: 700px; left: 420px; bottom: -480px; background: #dba56f; opacity: .6; }
+  .layer { position: absolute; inset: 0; }
+
+  /* ---------- phone ---------- */
+  #phone { position: absolute; left: 400px; top: 50%; width: 414px; height: 868px; margin-top: -434px; transform-origin: 50% 50%;
+    border-radius: 64px; background: #120904; padding: 12px;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), 0 60px 120px -40px rgba(28,15,8,.8), 0 0 0 1px rgba(28,15,8,.4); }
+  .screen { position: relative; width: 390px; height: 844px; border-radius: 52px; overflow: hidden; background: var(--bg); transform: translateZ(0); }
+  .screen .glow { position: absolute; }
+  .screen .glow.b { top: 340px; }
+  .scroller { position: absolute; inset: 0; overflow: hidden; z-index: 1; }
+  .screen { --gutter: 16px; }
+  .screen .heading-1 { font-size: 60px; }
+  .screen .heading-2 { font: 600 36px/40px var(--sans); }
+  .screen .stage { aspect-ratio: 1 / 1; }
+  .screen .ticket .stage { aspect-ratio: 16 / 10; }
+  .screen .bar { top: 52px; }
+  .screen .hero { padding-top: calc(var(--nav) + 64px); }
+  .screen .toast { position: absolute; bottom: 28px; }
+  .screen .call { position: absolute; }
+  .screen .call .ready-top { padding-top: 64px; }
+  .screen .call .ready-foot { padding-bottom: 40px; }
+  .topfade { position: absolute; z-index: 25; left: 0; right: 0; top: 0; height: 120px; background: linear-gradient(#c79468 40%, rgba(199,148,104,0)); pointer-events: none; }
+  .notch { position: absolute; z-index: 90; left: 50%; top: 11px; width: 120px; height: 34px; margin-left: -60px; border-radius: 20px; background: #000; }
+  .sb { position: absolute; z-index: 89; top: 14px; left: 34px; right: 30px; display: flex; justify-content: space-between; font: 600 16px/28px var(--sans); color: var(--ink); }
+  .sb.light { color: var(--cream); }
+  .track li.now::before { transform: scaleX(var(--brew, 1)); }
+  .tapfx { position: absolute; z-index: 95; visibility: hidden; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(255,250,244,.35); border: 2px solid rgba(36,20,11,.45); opacity: 0; pointer-events: none; }
+  .tapfx.lite { border-color: rgba(255,245,232,.8); background: rgba(255,245,232,.2); }
+
+  /* ---------- captions ---------- */
+  .cap { position: absolute; left: 980px; top: 50%; width: 820px; transform: translateY(-50%); }
+  .kicker { display: inline-flex; align-items: center; gap: 14px; font: 500 22px/28px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--soft); margin-bottom: 28px; }
+  .kicker i { width: 18px; height: 18px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 5px rgba(36,20,11,.15); }
+  .cap h2 { font: 600 104px/0.98 var(--sans); letter-spacing: -0.055em; color: var(--ink); text-wrap: balance; }
+  .cap h2 em { font-style: normal; color: var(--cream); text-shadow: 0 0 40px rgba(255,245,232,.35); }
+  .steps { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+  .steps span { padding: 14px 22px; border-radius: 9999px; font: 500 22px/28px var(--sans); background: rgba(255,244,230,.3); border: 1px solid var(--edge); color: var(--soft); }
+  .steps span.on { background: var(--dark); color: var(--cream); border-color: transparent; box-shadow: 0 0 0 2px var(--accent), 0 16px 32px -16px rgba(240,138,69,.7); }
+  .mono { font-family: var(--mono); letter-spacing: -0.03em; }
+
+  /* ---------- hook / outro ---------- */
+  .dark { background: var(--dark); }
+  .dark canvas { position: absolute; inset: 0; width: 1920px; height: 1080px; filter: drop-shadow(0 0 10px rgba(243,190,140,.55)); }
+  .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 80% at 22% 50%, rgba(28,15,8,.95) 30%, rgba(28,15,8,0) 75%); }
+  .hook-text { position: absolute; left: 150px; top: 50%; transform: translateY(-50%); color: var(--cream); }
+  .hook-text .l { font: 600 170px/0.95 var(--sans); letter-spacing: -0.06em; white-space: nowrap; }
+  .hook-text .l span { display: inline-block; }
+  .hook-text .l.b { color: var(--accent); text-shadow: 0 0 60px rgba(240,138,69,.55); }
+
+  .outro-text { position: absolute; left: 150px; top: 50%; transform: translateY(-50%); color: var(--cream); }
+  .wordmark { display: flex; align-items: center; gap: 36px; font: 600 200px/1 var(--sans); letter-spacing: -0.065em; }
+  .wordmark i { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 14px rgba(240,138,69,.2), 0 0 60px var(--accent); flex: none; }
+  .outro-line { font: 600 56px/1.1 var(--sans); letter-spacing: -0.04em; margin-top: 36px; color: rgba(255,245,232,.85); }
+
+  /* ---------- board ---------- */
+  #board { }
+  .board-wrap { position: absolute; left: 160px; top: 440px; width: 1280px; transform-origin: 0 0; transform: scale(1.25); }
+  .board-title { position: absolute; left: 160px; top: 200px; }
+  .board-title h2 { font: 600 104px/1 var(--sans); letter-spacing: -0.055em; color: var(--ink); }
+  .board-title h2 .mono { font-weight: 500; color: var(--cream); text-shadow: 0 0 40px rgba(255,245,232,.35); }
+  .admin .board { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .lane-body { position: relative; }
+  .order { will-change: transform, opacity; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="sglow a"></div><div class="sglow b"></div><div class="sglow c"></div>
+
+  <!-- ===== board ===== -->
+  <div class="layer" id="board">
+    <div class="board-title" id="board-title"><div class="kicker"><i></i>The barista side</div><h2>You run the bar from <span class="mono">/admin</span></h2></div>
+    <div class="board-wrap admin" id="board-wrap">
+      <div class="board">
+        <div class="lane" data-lane="queued"><h2 class="lane-title">In line <span class="count" id="c-q"></span></h2><div class="lane-body">
+          <article class="order" id="o-maya"><div class="order-head"><span class="order-no">6</span><span class="order-who"><b>Maya</b><span>Latte</span></span><span class="order-time">3 min ago</span></div>
+            <div class="order-specs"><span class="spec-chip">Whole</span><span class="spec-chip">Hot</span><span class="spec-chip">Double</span><span class="spec-chip sugar"><span class="cubes"><span class="cube-dot on"></span><span class="cube-dot"></span><span class="cube-dot"></span><span class="cube-dot"></span></span>A touch</span></div>
+            <div class="order-actions"><button class="btn small">Start brewing</button><button class="text-btn danger">Cancel</button></div></article>
+          <article class="order" id="sam-q"><div class="order-head"><span class="order-no">7</span><span class="order-who"><b>Sam</b><span>Flat white</span></span><span class="order-time">just now</span></div>
+            <div class="order-specs"><span class="spec-chip">Oat</span><span class="spec-chip sugar"><span class="cubes"><span class="cube-dot on"></span><span class="cube-dot on"></span><span class="cube-dot"></span><span class="cube-dot"></span></span>One spoon</span></div>
+            <div class="order-actions"><button class="btn small" id="sam-start">Start brewing</button><button class="text-btn danger">Cancel</button></div></article>
+        </div></div>
+        <div class="lane" data-lane="making"><h2 class="lane-title">Brewing <span class="count" id="c-m"></span></h2><div class="lane-body">
+          <div class="lane-empty" id="m-empty">Nothing brewing. Start one from the line.</div>
+          <article class="order" id="sam-m"><div class="order-head"><span class="order-no">7</span><span class="order-who"><b>Sam</b><span>Flat white</span></span><span class="order-time">just now</span></div>
+            <div class="order-specs"><span class="spec-chip">Oat</span><span class="spec-chip sugar"><span class="cubes"><span class="cube-dot on"></span><span class="cube-dot on"></span><span class="cube-dot"></span><span class="cube-dot"></span></span>One spoon</span></div>
+            <div class="order-actions"><button class="btn small ok" id="sam-ready">Ready, call Sam</button><button class="text-btn">Back to line</button></div></article>
+        </div></div>
+        <div class="lane" data-lane="ready"><h2 class="lane-title">Ready for pickup <span class="count" id="c-r"></span></h2><div class="lane-body">
+          <article class="order" id="sam-r"><div class="order-head"><span class="order-no">7</span><span class="order-who"><b>Sam</b><span>Flat white</span></span><span class="order-time">just now</span></div>
+            <div class="order-specs"><span class="spec-chip">Oat</span><span class="spec-chip sugar"><span class="cubes"><span class="cube-dot on"></span><span class="cube-dot on"></span><span class="cube-dot"></span><span class="cube-dot"></span></span>One spoon</span></div>
+            <div class="order-actions"><button class="btn small">Picked up</button><button class="text-btn">Call again</button></div></article>
+          <article class="order" id="o-nana"><div class="order-head"><span class="order-no">4</span><span class="order-who"><b>Nana</b><span>Cappuccino</span></span><span class="order-time">6 min ago</span></div>
+            <div class="order-specs"><span class="spec-chip">Whole</span><span class="spec-chip">Single</span><span class="spec-chip sugar"><span class="cubes"><span class="cube-dot on"></span><span class="cube-dot on"></span><span class="cube-dot on"></span><span class="cube-dot"></span></span>Sweet</span></div>
+            <div class="order-actions"><button class="btn small">Picked up</button><button class="text-btn">Call again</button></div></article>
+        </div></div>
+      </div>
+    </div>
+    <div class="tapfx" id="tap2" style="position:absolute"></div>
+  </div>
+
+  <!-- ===== captions ===== -->
+  <div class="cap" id="cap1"><div class="kicker"><i></i>coffeeCart</div><h2>A coffee bar for your living&nbsp;room.</h2></div>
+  <div class="cap" id="cap2"><div class="kicker"><i></i>The guest side</div><h2>Guests order from their phone.</h2>
+    <div class="steps" id="steps"><span>Name</span><span>Drink</span><span>Milk</span><span>Sugar</span><span>Send</span></div></div>
+  <div class="cap" id="cap3"><div class="kicker"><i></i>The ready call</div><h2>We call you the moment it’s <em>poured.</em></h2></div>
+
+  <!-- ===== phone ===== -->
+  <div id="phone"><div class="screen" id="screen">
+    <div class="glow a"></div><div class="glow b"></div><div class="glow c"></div>
+    <div class="sb" id="sb"><span>8:42</span><span>●●● ▮</span></div>
+    <div class="topfade" id="topfade"></div><div class="notch"></div>
+    <nav class="bar"><a class="mark"><i></i><span>House Coffee Bar</span></a><span class="status"><span>Open</span></span></nav>
+    <div class="scroller" id="scroller"><main>
+      <section class="hero">
+        <div class="hero-copy">
+          <h1 class="heading-1">Coffee,<br>made to order</h1>
+          <p>Pick a drink, set the sugar, and we call you on this screen the moment it is poured.</p>
+          <a class="btn">Order a coffee <span class="arrow">↗</span></a>
+        </div>
+        <figure class="stage"><canvas id="fig-hero"></canvas>
+          <div class="chip tl"><span class="label">On tonight</span><b>5 drinks</b></div>
+          <div class="chip br"><span class="label">The line</span><b>2 cups ahead</b></div></figure>
+      </section>
+      <section class="sect" id="order">
+        <div class="sect-head"><h2 class="heading-2">Your order</h2><span class="label" id="order-side">5 steps</span></div>
+        <div id="form-view"></div>
+        <div id="ticket-view" style="display:none">
+          <article class="ticket" id="ticket">
+            <div class="ticket-top"><div class="ticket-no">07</div><div class="ticket-who"><b>Sam's flat white</b><span>Oat · One spoon</span></div></div>
+            <figure class="stage"><canvas id="fig-ticket"></canvas></figure>
+            <ol class="track label"><li id="tr0" class="now">In line</li><li id="tr1">Brewing</li><li id="tr2">Ready</li></ol>
+            <p class="say" id="say">2 orders ahead of you.</p>
+          </article>
+        </div>
+      </section>
+      <section class="sect" id="line"><div class="sect-head"><h2 class="heading-2">The line</h2><span class="label">3 orders</span></div></section>
+    </main></div>
+    <div class="toast" id="toast">Order 07 is in. We will call you.</div>
+    <div class="call" id="ready">
+      <canvas id="fig-ready"></canvas>
+      <div class="ready-top label"><span>Order 07</span><span class="pill">Ready</span></div>
+      <div class="ready-mid"><h2 id="ready-title">Sam, your flat white is ready.</h2></div>
+      <div class="ready-foot"><button class="btn" type="button">On my way <span class="arrow">↗</span></button></div>
+    </div>
+    <div class="tapfx" id="tap1"></div>
+  </div></div>
+
+  <!-- ===== hook ===== -->
+  <div class="layer dark" id="hook"><canvas id="cv-hook"></canvas><div class="vignette"></div>
+    <div class="hook-text"><div class="l a"><span id="h1">Friends</span> <span id="h2">over?</span></div><div class="l b"><span id="h3">Open</span> <span id="h4">the</span> <span id="h5">bar.</span></div></div></div>
+
+  <!-- ===== outro ===== -->
+  <div class="layer dark" id="outro"><canvas id="cv-outro"></canvas><div class="vignette"></div>
+    <div class="outro-text">
+      <div class="wordmark" id="wm"><i></i><span>coffeeCart</span></div>
+      <div class="outro-line" id="ol">Coffee, made to order. Made at&nbsp;home.</div>
+    </div></div>
+</div>
+
+<script>
+"use strict";
+var BEAT = 0.625, SUGAR = ["No sugar", "A touch", "One spoon", "Sweet", "Extra sweet"];
+function $(id) { return document.getElementById(id); }
+function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+function seg(t, a, b) { return clamp((t - a) / (b - a)); }
+function eo(x) { x = clamp(x); return 1 - Math.pow(1 - x, 4); }
+function eio(x) { x = clamp(x); return x < .5 ? 8 * x * x * x * x : 1 - Math.pow(-2 * x + 2, 4) / 2; }
+function lerp(a, b, x) { return a + (b - a) * x; }
+
+/* ---- the app's own ASCII cup (fx.js), made a pure function of time ---- */
+var RAMP = " ..::-=+*#%";
+function ascii(canvas, t, o) {
+  o = o || {};
+  var k = o.k || 1, cw = 11 * k, ch = 15 * k, dpr = 2;
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+  var ctx = canvas.getContext("2d");
+  var ink = o.ink || "#f3cfa6", accent = o.accent || "#f08a45";
+  var cols = Math.ceil(w / cw), rows = Math.ceil(h / ch);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.font = "500 " + (11 * k) + 'px "Geist Mono", ui-monospace, Menlo, monospace';
+  ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillStyle = ink;
+  var cx = o.cx != null ? o.cx : w / 2, cy = h / 2, S = Math.min(w, h) * (o.s || 0.5), R = 0.66;
+  var ma = -t * 0.7, mx = cx + Math.cos(ma) * R * 0.55 * S, my = cy + Math.sin(ma) * R * 0.55 * S;
+  var mcol = Math.round((mx - cw / 2) / cw), mrow = Math.round((my - ch / 2) / ch);
+  var marker = o.marker !== false;
+  for (var j = 0; j < rows; j++) for (var i = 0; i < cols; i++) {
+    var px = i * cw + cw / 2, py = j * ch + ch / 2, nx = (px - cx) / S, ny = (py - cy) / S;
+    var r = Math.sqrt(nx * nx + ny * ny), v;
+    if (r < R) { var a = Math.atan2(ny, nx); var sw = Math.sin(a * 2 - r * 10 + t * 1.4) * 0.5 + 0.5; v = 0.3 + 0.7 * sw * (0.45 + 0.55 * (r / R)); }
+    else if (r < R + 0.09) v = 1;
+    else if (r > R + 0.3 && r < R + 0.36) v = 0.34;
+    else { v = 0.12 + 0.16 * (Math.sin(nx * 2.4 + t * 0.5) + Math.sin(ny * 3.1 - t * 0.35)) * 0.5 + 0.08; v *= Math.max(0, 1.5 - r * 0.5); }
+    if (marker && i === mcol && j === mrow) { ctx.fillStyle = accent; ctx.fillRect(px - 4.5 * k, py - 4.5 * k, 9 * k, 9 * k); ctx.fillStyle = ink; continue; }
+    var c = RAMP[Math.max(0, Math.min(RAMP.length - 1, Math.round(v * (RAMP.length - 1))))];
+    if (c !== " ") ctx.fillText(c, px, py);
+  }
+}
+
+/* ---- the real order form markup (guest.js renderForm), with the default menu ---- */
+function glassArt(name, id) {
+  var n = name.toLowerCase(), layers;
+  if (/espresso/.test(n)) layers = [["#3b2010", 0.5], ["#c98a4f", 0.14]];
+  else if (/americano/.test(n)) layers = [["#3b2010", 0.3], ["#5d3620", 0.55]];
+  else if (/cappuccino/.test(n)) layers = [["#3b2010", 0.28], ["#c79a6c", 0.28], ["#fff5e8", 0.3]];
+  else if (/flat/.test(n)) layers = [["#3b2010", 0.34], ["#c79a6c", 0.44], ["#fff5e8", 0.08]];
+  else layers = [["#3b2010", 0.2], ["#c79a6c", 0.52], ["#fff5e8", 0.14]];
+  var y = 42, out = "";
+  layers.forEach(function (l) { var hh = l[1] * 34; y -= hh; out += '<rect x="10" y="' + y.toFixed(1) + '" width="28" height="' + (hh + 0.5).toFixed(1) + '" fill="' + l[0] + '"/>'; });
+  return '<svg viewBox="0 0 48 48"><defs><clipPath id="' + id + '"><path d="M12 8h24l-2.5 31a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z"/></clipPath></defs>' +
+    '<path d="M12 8h24l-2.5 31a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z" fill="rgba(255,250,244,.55)"/><g clip-path="url(#' + id + ')">' + out + '</g>' +
+    '<path d="M12 8h24l-2.5 31a3 3 0 0 1-3 3h-13a3 3 0 0 1-3-3z" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.5"/>' +
+    '<path d="M16 12l1.6 24" stroke="rgba(255,255,255,.5)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+}
+var MENU = [["latte", "Latte", "Espresso, silky steamed milk"], ["cappuccino", "Cappuccino", "Equal parts espresso, milk and foam"],
+  ["flatwhite", "Flat white", "Double ristretto, thin velvet milk"], ["americano", "Americano", "Espresso lengthened with hot water"], ["espresso", "Espresso", "A short, syrupy shot"]];
+$("form-view").innerHTML = '<form id="order-form">' +
+  '<div class="step" id="st-name"><div class="step-head label"><label>01 Name</label><span>Required</span></div><input class="input" id="f-name" placeholder="Your name"></div>' +
+  '<fieldset class="step"><div class="step-head label"><span>02 Drink</span><span>5 on tonight</span></div><div class="menu">' +
+  MENU.map(function (d, i) { return '<label class="drink"><input type="radio" name="drink" value="' + d[0] + '"' + (i === 0 ? " checked" : "") + '><span class="drink-row" id="dr-' + d[0] + '"><span class="glass-art">' + glassArt(d[1], "g" + i) + '</span><span class="name">' + d[1] + '</span><span class="pick"></span><span class="desc">' + d[2] + '</span></span></label>'; }).join("") +
+  '</div></fieldset>' +
+  '<div class="step" id="opt-step"><div class="step-head label"><span>03 Options</span><span>Your call</span></div><div class="opt-groups"><fieldset class="opt-group"><legend class="label">Milk</legend><div class="toggles">' +
+  ["Whole", "Oat", "Almond", "Skim"].map(function (c, i) { return '<label class="toggle"><input type="radio" name="opt-milk" value="' + c + '"' + (i === 0 ? " checked" : "") + '><span id="tg-' + c + '">' + c + '</span></label>'; }).join("") +
+  '</div></fieldset></div></div>' +
+  '<fieldset class="step" id="st-sugar"><div class="step-head label"><span>04 Sugar</span><span>Spoons</span></div><div class="sugar-top"><div class="sugar-now" id="sugar-now">No sugar</div><div class="cubes" id="cubes"><i></i><i></i><i></i><i></i></div></div>' +
+  '<div class="levels">' + [0, 1, 2, 3, 4].map(function (i) { return '<label class="level"><input type="radio" name="sugar" value="' + i + '"' + (i === 0 ? " checked" : "") + '><span id="lv-' + i + '">' + i + '</span></label>'; }).join("") + '</div></fieldset>' +
+  '<div class="step"><div class="step-head label"><label>05 Notes</label><span>Optional</span></div><textarea class="textarea" placeholder="Extra hot, half caf, a little cinnamon"></textarea></div>' +
+  '<div class="submit"><button class="btn accent" type="button" id="f-submit"><span id="submit-t">Send my order</span><span class="arrow">↗</span></button></div></form>';
+
+/* ---- layout measurements (in screen px, unscaled) ---- */
+var scroller = $("scroller"), screenEl = $("screen");
+function topIn(el) { var y = 0; while (el && el !== scroller) { y += el.offsetTop; el = el.offsetParent; } return y; }
+function rectIn(el, root, scale) {
+  var r = el.getBoundingClientRect(), b = root.getBoundingClientRect();
+  return { x: (r.left - b.left + r.width / 2) / scale, y: (r.top - b.top + r.height / 2) / scale };
+}
+var Y = {};
+function measure() {
+  Y.name = topIn($("st-name")) - 132;
+  Y.opt = topIn($("opt-step")) - 132;
+  Y.order = topIn($("order")) - 120;
+}
+
+function show(el, v) { el.style.opacity = v; el.style.visibility = v <= 0.001 ? "hidden" : "visible"; }
+
+function tap(el, at, t, scale, root, fx) {
+  // ripple centered on an element, plus the element's own press
+  var d = t - at;
+  if (el.offsetParent === null) return false;
+  if (d >= -0.02 && d < 0.45) {
+    var p = rectIn(el, root, scale);
+    fx.style.left = p.x + "px"; fx.style.top = p.y + "px";
+    var x = clamp(d / 0.45);
+    fx.style.opacity = d < 0 ? 0 : (1 - x) * 0.95;
+    fx.style.transform = "scale(" + (0.6 + 0.9 * eo(x)) + ")";
+    return true;
+  }
+  return false;
+}
+function press(el, at, t) {
+  var d = t - at, s = 1;
+  if (d >= 0 && d < 0.25) s = 1 - 0.04 * Math.sin(Math.PI * d / 0.25);
+  el.style.transform = s === 1 ? "" : "scale(" + s + ")";
+}
+
+/* ---------------- timeline ---------------- */
+function B(n) { return n * BEAT; }
+var PHONE_SCALE = 1.12;
+
+window.seek = function (t) {
+  document.documentElement.style.setProperty("--brew", (0.15 + 0.85 * (0.5 - 0.5 * Math.cos(t * Math.PI / 1.6))).toFixed(3));
+
+  /* ===== 1 hook: 0–2.5s ===== */
+  var hookOut = eio(seg(t, B(4) - 0.15, B(4) + 0.35));
+  var hook = $("hook");
+  hook.style.clipPath = "inset(0 0 " + (hookOut * 100).toFixed(2) + "% 0)";
+  show(hook, hookOut >= 1 ? 0 : 1);
+  if (hookOut < 1) {
+    ascii($("cv-hook"), 2 + t * 1.1, { k: 1.7, cx: 1340, s: 0.56 });
+    [[ "h1", 0], ["h2", 0.5], ["h3", 1], ["h4", 1.25], ["h5", 1.5]].forEach(function (w) {
+      var x = eo(seg(t, B(w[1]) - 0.02, B(w[1]) + 0.32)), out = seg(t, B(4) - 0.35, B(4) - 0.12);
+      var el = $(w[0]); el.style.opacity = x * (1 - out); el.style.transform = "translateY(" + ((1 - x) * 60 - out * 30) + "px)";
+    });
+  }
+
+  /* ===== phone presence ===== */
+  var ph = $("phone");
+  var inA = eo(seg(t, B(4) + 0.1, B(4) + 0.75));         // rise in on the reveal
+  var outA = eio(seg(t, B(18) - 0.3, B(18) + 0.05));      // slide out for the board
+  var inB = eo(seg(t, B(24) + 0.05, B(24) + 0.6));        // back for the ready call
+  var outB = eio(seg(t, B(30) - 0.35, B(30)));            // gone for the outro
+  var px, op;
+  if (t < B(21)) { px = (1 - inA) * 260 - outA * 900; op = Math.min(inA, 1 - outA); }
+  else { px = -(1 - inB) * 900; op = inB * (1 - outB); }
+  var py = t < B(21) ? 0 : outB * 60;
+  ph.style.transform = "translate(" + px + "px," + py + "px) scale(" + PHONE_SCALE + ") rotate(" + (t < B(21) ? (1 - inA) * 4 : 0) + "deg)";
+  show(ph, op);
+  // vibrate on the ready call
+  var buzz = t - (B(25)), bz = 0;
+  if (buzz > 0 && buzz < 0.7) bz = Math.sin(buzz * 90) * 7 * (1 - buzz / 0.7);
+  if (bz) ph.style.transform += " translateX(" + bz.toFixed(2) + "px) rotate(" + (bz * 0.12).toFixed(2) + "deg)";
+
+  /* ===== phone content ===== */
+  if (op > 0) {
+    ascii($("fig-hero"), 3 + t, {});
+    // scroll
+    var sc = 0;
+    sc = lerp(0, Y.name, eio(seg(t, B(10), B(10) + 0.55)));
+    sc = lerp(sc, Y.opt, eio(seg(t, B(12) + 0.25, B(13) + 0.1)));
+    var swap = B(15.5);
+    if (t >= swap + 0.12) sc = Y.order;
+    scroller.scrollTop = sc;
+
+    // name typing
+    var name = "Sam", typed = 0;
+    [B(11) + 0.16, B(11) + 0.31, B(11) + 0.47].forEach(function (at) { if (t >= at) typed++; });
+    var inp = $("f-name"); inp.value = name.slice(0, typed);
+    inp.style.outline = t >= B(11) - 0.02 && t < B(12) ? "2px solid var(--ink)" : "";
+    inp.style.outlineOffset = "2px";
+
+    // drink pick
+    var fw = t >= B(12);
+    document.querySelector('input[value="flatwhite"]').checked = fw;
+    document.querySelector('input[value="latte"]').checked = !fw;
+    // flat white only offers milk; latte offers milk too, so the group stays
+    $("tg-Oat").previousElementSibling.checked = t >= B(13.5);
+    $("tg-Whole").previousElementSibling.checked = t < B(13.5);
+    // sugar
+    var sugar = t >= B(14) ? 2 : 0;
+    document.querySelector('input[name="sugar"][value="' + sugar + '"]').checked = true;
+    $("sugar-now").textContent = SUGAR[sugar];
+    document.querySelectorAll(".level").forEach(function (el, i) { el.classList.toggle("fill", i > 0 && i < sugar); });
+    document.querySelectorAll("#cubes i").forEach(function (el, i) {
+      var x = eo(seg(t, B(14) + i * 0.08, B(14) + i * 0.08 + 0.45));
+      if (i >= 2) x = 0;
+      el.style.opacity = x; el.style.transform = "translateY(" + (-16 * (1 - x)) + "px) rotate(" + (-12 * (1 - x)) + "deg)";
+    });
+    // send
+    $("submit-t").textContent = t >= B(15) && t < swap ? "Sending" : "Send my order";
+    $("f-submit").style.opacity = t >= B(15) + 0.1 && t < swap ? 0.55 : 1;
+
+    // taps
+    var fx = $("tap1"), any = false;
+    fx.className = "tapfx";
+    any = tap(inp, B(11) - 0.05, t, PHONE_SCALE, screenEl, fx) || any;
+    if (!any) any = tap($("dr-flatwhite"), B(12), t, PHONE_SCALE, screenEl, fx);
+    if (!any) any = tap($("tg-Oat"), B(13.5), t, PHONE_SCALE, screenEl, fx);
+    if (!any) any = tap($("lv-2"), B(14), t, PHONE_SCALE, screenEl, fx);
+    if (!any) any = tap($("f-submit"), B(15), t, PHONE_SCALE, screenEl, fx);
+    fx.style.visibility = any ? 'visible' : 'hidden';
+    press($("dr-flatwhite"), B(12), t); press($("tg-Oat"), B(13.5), t); press($("lv-2"), B(14), t); press($("f-submit"), B(15), t);
+
+    // form -> ticket
+    var fOut = seg(t, swap, swap + 0.12), tIn = eo(seg(t, swap + 0.12, swap + 0.55));
+    $("form-view").style.display = t < swap + 0.12 ? "" : "none";
+    $("form-view").style.opacity = 1 - fOut;
+    $("ticket-view").style.display = t >= swap + 0.12 ? "" : "none";
+    $("ticket").style.opacity = tIn; $("ticket").style.transform = "translateY(" + ((1 - tIn) * 32) + "px)";
+    $("order-side").textContent = t >= swap + 0.12 ? "Ticket" : "5 steps";
+    var brewing = t >= B(21);
+    $("tr0").className = brewing ? "done" : "now"; $("tr1").className = brewing ? "now" : ""; $("tr2").className = "";
+    $("say").textContent = brewing ? "Brewing now." : "2 orders ahead of you.";
+    if (t >= swap) ascii($("fig-ticket"), t * (brewing ? 1.6 : 0.6), {});
+    // toast
+    var to = eo(seg(t, swap, swap + 0.4)) * (1 - seg(t, B(18) - 0.6, B(18) - 0.3));
+    $("toast").style.opacity = to; $("toast").style.transform = "translateY(" + ((1 - to) * 24) + "px)";
+
+    // ready call
+    var rc = eo(seg(t, B(25), B(25) + 0.45));
+    var call = $("ready");
+    call.hidden = rc <= 0; call.style.opacity = rc;
+    $("sb").className = rc > 0.5 ? "sb light" : "sb";
+    $("topfade").style.opacity = 1 - rc;
+    if (rc > 0) {
+      ascii($("fig-ready"), t * 1.2, { marker: false });
+      var hx = eo(seg(t, B(25) + 0.1, B(25) + 0.8));
+      $("ready-title").style.opacity = hx; $("ready-title").style.transform = "translateY(" + ((1 - hx) * 32) + "px)";
+    }
+  }
+
+  /* ===== captions ===== */
+  function cap(el, a, b) {
+    var i = eo(seg(t, a, a + 0.5)), o = eio(seg(t, b - 0.3, b));
+    el.style.opacity = i * (1 - o);
+    el.style.transform = "translateY(calc(-50% + " + ((1 - i) * 40 - o * 24) + "px))";
+    el.style.visibility = i * (1 - o) > 0 ? "visible" : "hidden";
+  }
+  cap($("cap1"), B(4) + 0.35, B(10) - 0.02);
+  cap($("cap2"), B(10) + 0.12, B(18) - 0.05);
+  cap($("cap3"), B(24) + 0.3, B(30) - 0.05);
+  var stepAt = [B(11), B(12), B(13.5), B(14), B(15)];
+  document.querySelectorAll("#steps span").forEach(function (s, i) {
+    s.className = t >= stepAt[i] ? "on" : "";
+    var x = eo(seg(t, B(10) + 0.4 + i * 0.06, B(10) + 0.8 + i * 0.06));
+    s.style.opacity = x; s.style.transform = "translateY(" + ((1 - x) * 16) + "px)";
+  });
+
+  /* ===== 4 board: 11.25–15s ===== */
+  var bIn = eo(seg(t, B(18), B(18) + 0.5)), bOut = eio(seg(t, B(24) - 0.3, B(24) + 0.02));
+  var board = $("board");
+  show(board, bIn * (1 - bOut));
+  if (bIn > 0 && bOut < 1) {
+    $("board-title").style.transform = "translateY(" + ((1 - bIn) * 40 - bOut * 30) + "px)";
+    document.querySelectorAll("#board .lane").forEach(function (l, i) {
+      var x = eo(seg(t, B(18) + 0.05 + i * 0.07, B(18) + 0.6 + i * 0.07));
+      l.style.opacity = x; l.style.transform = "translateY(" + ((1 - x) * 48 + bOut * 30) + "px)";
+    });
+    var arrive = B(19), start = B(20.5), ready = B(22);
+    function card(el, a, b) {
+      var i = eo(seg(t, a, a + 0.45)), o = b == null ? 0 : seg(t, b + 0.12, b + 0.24);
+      el.style.display = t >= a && (b == null || t < b + 0.24) ? "" : "none";
+      el.style.opacity = i * (1 - o);
+      el.style.transform = "translateY(" + ((1 - i) * 32) + "px) scale(" + (1 - o * 0.04) + ")";
+    }
+    card($("sam-q"), arrive, start);
+    card($("sam-m"), start + 0.24, ready);
+    card($("sam-r"), ready + 0.24, null);
+    $("c-q").textContent = t >= arrive && t < start + 0.24 ? "2" : "1";
+    $("m-empty").style.display = t >= start + 0.24 && t < ready + 0.24 ? "none" : "";
+    $("c-m").textContent = t >= start + 0.24 && t < ready + 0.24 ? "1" : "";
+    $("c-r").textContent = t >= ready + 0.24 ? "2" : "1";
+    press($("sam-start"), start, t); press($("sam-ready"), ready, t);
+    var fx2 = $("tap2");
+    var hit = tap($("sam-start"), start, t, 1, $("stage"), fx2) || tap($("sam-ready"), ready, t, 1, $("stage"), fx2);
+    fx2.style.visibility = hit ? 'visible' : 'hidden';
+  }
+
+  /* ===== 6 outro: 18.75–22.5s ===== */
+  var oIn = eio(seg(t, B(30) - 0.2, B(30) + 0.3));
+  var outro = $("outro");
+  outro.style.clipPath = "inset(0 0 " + ((1 - oIn) * 100).toFixed(2) + "% 0)";
+  show(outro, oIn > 0 ? 1 : 0);
+  if (oIn > 0) {
+    ascii($("cv-outro"), 2 + t * 0.9, { k: 1.7, cx: 1620, s: 0.42 });
+    var w = eo(seg(t, B(30) + 0.15, B(30) + 0.65)), l = eo(seg(t, B(31), B(31) + 0.5)), c = eo(seg(t, B(32), B(32) + 0.45));
+    $("wm").style.opacity = w; $("wm").style.transform = "translateY(" + ((1 - w) * 50) + "px)";
+    $("ol").style.opacity = l; $("ol").style.transform = "translateY(" + ((1 - l) * 30) + "px)";
+  }
+};
+
+window.ready = (async function () {
+  await document.fonts.ready;
+  await document.fonts.load('500 11px "Geist Mono"');
+  await document.fonts.load('600 60px "Geist"');
+  measure();
+  return true;
+})();
+</script>
+</body>
+</html>

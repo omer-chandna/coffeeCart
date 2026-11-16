@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barista · House Coffee Bar</title>
+<meta name="description" content="The barista's side of the house coffee bar: the queue, the menu and the ready call.">
+<meta name="theme-color" content="#b58459">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%232b1a12'/%3E%3Ccircle cx='32' cy='32' r='20' fill='%236b3f26'/%3E%3Cpath d='M32 26c0-4 6-5 7-1 2 6-5 10-10 8-8-3-6-14 2-16' fill='none' stroke='%23d9b38c' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+<div class="glow a" aria-hidden="true"></div>
+<div class="glow b" aria-hidden="true"></div>
+<div class="glow c" aria-hidden="true"></div>
+
+<!-- PIN gate -->
+<main class="login" id="login" hidden>
+  <form class="login-box card" id="login-form" data-enter>
+    <div class="login-cup" id="login-cup"></div>
+    <div>
+      <span class="label mute">Behind the bar</span>
+      <h1>Barista sign-in</h1>
+    </div>
+    <label class="label" for="pin">PIN</label>
+    <input class="input pin" id="pin" inputmode="numeric" autocomplete="current-password" type="password" maxlength="12" placeholder="••••">
+    <p class="error" id="pin-error" role="alert"></p>
+    <button class="btn wide" type="submit">Open the bar <span class="arrow" aria-hidden="true">→</span></button>
+    <p class="mute small-print">The PIN is printed in the terminal when the server starts.</p>
+  </form>
+</main>
+
+<div id="app" hidden>
+  <header class="bar dark">
+    <div class="mark label">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#faf6f0"/><circle cx="32" cy="32" r="19" fill="#6b3f26"/><path d="M32 27c0-4 6-5 7-1 2 6-5 10-10 8-8-3-6-14 2-16" fill="none" stroke="#d9b38c" stroke-width="3" stroke-linecap="round"/></svg>
+      <span data-house>House Coffee Bar</span>
+    </div>
+    <label class="switch" title="Let guests place orders">
+      <input type="checkbox" id="open-toggle">
+      <span class="switch-track" aria-hidden="true"><span class="switch-knob"></span></span>
+      <span class="switch-label" id="open-label">Open</span>
+    </label>
+  </header>
+
+  <nav class="tabs" aria-label="Barista sections">
+    <div class="tabs-inner" role="tablist">
+      <button role="tab" class="tab" data-tab="queue" aria-selected="true">Queue <span class="count" id="tab-count"></span></button>
+      <button role="tab" class="tab" data-tab="menu" aria-selected="false">Menu</button>
+      <button role="tab" class="tab" data-tab="options" aria-selected="false">Options</button>
+      <button role="tab" class="tab" data-tab="settings" aria-selected="false">Settings</button>
+    </div>
+  </nav>
+
+  <main class="admin-main">
+    <!-- QUEUE -->
+    <section class="panel" id="tab-queue" role="tabpanel" aria-labelledby="h-queue">
+      <div class="panel-head">
+        <h1 id="h-queue">Tonight's queue</h1>
+        <p class="mute" id="guest-link"></p>
+      </div>
+      <div class="board">
+        <div class="lane" data-lane="queued"><h2 class="lane-title">In line <span class="count" data-count="queued"></span></h2><div class="lane-body" id="lane-queued"></div></div>
+        <div class="lane" data-lane="making"><h2 class="lane-title">Brewing <span class="count" data-count="making"></span></h2><div class="lane-body" id="lane-making"></div></div>
+        <div class="lane" data-lane="ready"><h2 class="lane-title">Ready for pickup <span class="count" data-count="ready"></span></h2><div class="lane-body" id="lane-ready"></div></div>
+      </div>
+      <details class="history">
+        <summary>Picked up &amp; cancelled <span class="count" id="history-count"></span></summary>
+        <div id="history"></div>
+      </details>
+    </section>
+
+    <!-- MENU -->
+    <section class="panel" id="tab-menu" role="tabpanel" aria-labelledby="h-menu" hidden>
+      <div class="panel-head">
+        <h1 id="h-menu">What you're making</h1>
+        <p class="mute">Switch a drink off when you run out of something. Guests only see what's on.</p>
+      </div>
+      <div class="split">
+        <div id="menu-list" class="stack"></div>
+        <form class="card form-card" id="drink-form">
+          <h2 id="drink-form-title">Add a drink</h2>
+          <input type="hidden" name="id">
+          <div class="field"><label class="label" for="d-name">Name</label><input class="input" id="d-name" name="name" maxlength="40" placeholder="Cortado"></div>
+          <div class="field"><label class="label" for="d-desc">Short description <span class="hint">Optional</span></label><input class="input" id="d-desc" name="description" maxlength="90" placeholder="Espresso cut with a little warm milk"></div>
+          <fieldset class="field" style="border:0;padding:0;margin-inline:0"><legend class="label" style="margin-bottom:8px">Options guests can pick</legend><div class="chips" id="d-options"></div></fieldset>
+          <p class="error" id="drink-error" role="alert"></p>
+          <div class="row-actions">
+            <button class="btn" type="submit" id="drink-submit">Add to the menu</button>
+            <button class="text-btn" type="button" id="drink-cancel" hidden>Cancel edit</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- OPTIONS -->
+    <section class="panel" id="tab-options" role="tabpanel" aria-labelledby="h-options" hidden>
+      <div class="panel-head">
+        <h1 id="h-options">Drink options</h1>
+        <p class="mute">Milk, temperature, shots, syrups. The first choice is the default.</p>
+      </div>
+      <div class="split">
+        <div id="group-list" class="stack"></div>
+        <form class="card form-card" id="group-form">
+          <h2 id="group-form-title">Add an option</h2>
+          <input type="hidden" name="id">
+          <div class="field"><label class="label" for="g-name">Name</label><input class="input" id="g-name" name="name" maxlength="30" placeholder="Syrup"></div>
+          <div class="field"><label class="label" for="g-choices">Choices <span class="hint">Comma separated</span></label><input class="input" id="g-choices" name="choices" placeholder="None, Vanilla, Caramel, Hazelnut"></div>
+          <p class="error" id="group-error" role="alert"></p>
+          <div class="row-actions">
+            <button class="btn" type="submit" id="group-submit">Add option</button>
+            <button class="text-btn" type="button" id="group-cancel" hidden>Cancel edit</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="panel" id="tab-settings" role="tabpanel" aria-labelledby="h-settings" hidden>
+      <div class="panel-head"><h1 id="h-settings">Settings</h1></div>
+      <div class="split">
+        <form class="card form-card" id="settings-form">
+          <h2>Your bar</h2>
+          <div class="field"><label class="label" for="s-house">Bar name</label><input class="input" id="s-house" name="houseName" maxlength="40"></div>
+          <div class="field"><label class="label" for="s-pin">New PIN <span class="hint">Leave blank to keep it</span></label><input class="input" id="s-pin" name="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12"></div>
+          <p class="error" id="settings-error" role="alert"></p>
+          <div class="row-actions"><button class="btn" type="submit">Save settings</button></div>
+        </form>
+        <div class="card form-card">
+          <h2>Sounds</h2>
+          <p class="mute">A two-note chime plays here when a new order comes in. Browsers need one tap before they allow sound.</p>
+          <div class="row-actions"><button class="btn line" type="button" id="test-sound">Play the chime</button></div>
+          <hr class="rule">
+          <button class="text-btn" type="button" id="sign-out">Sign out of this device</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="common.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
